@@ -175,13 +175,43 @@ class CalculatorApp:
     def figures_window(self):
         win = tk.Toplevel(self.root)
         win.title('Фигуры')
-        win.geometry('320x220')
+        win.geometry('220x450')
         if not THEME_AVAILABLE:
             win.configure(bg='#222831')
-        ttk.Label(win, text='Выберите фигуру:').pack(pady=8)
-        self.make_btn(win, 'Прямоугольник', lambda: self.figure_input(win, 'Прямоугольник', ['Длина', 'Ширина'], lambda v: (float(v[0]) * float(v[1]), 2 * (float(v[0]) + float(v[1])))), width=18, kind='special').pack(pady=6)
-        self.make_btn(win, 'Круг', lambda: self.figure_input(win, 'Круг', ['Радиус'], lambda v: (math.pi * float(v[0]) ** 2, 2 * math.pi * float(v[0]))), width=18, kind='special').pack(pady=6)
-        self.make_btn(win, 'Треугольник', lambda: self.figure_triangle(win), width=18, kind='special').pack(pady=6)
+        
+        # Создаём фрейм с прокруткой
+        canvas = tk.Canvas(win, bg='#222831' if not THEME_AVAILABLE else None, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(win, orient='vertical', command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind(
+            '<Configure>',
+            lambda e: canvas.configure(scrollregion=canvas.bbox('all'))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor='nw')
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+        
+        ttk.Label(scrollable_frame, text='═══ Плоские фигуры ═══', font=('Segoe UI', 10, 'bold')).pack(pady=(8, 4))
+        self.make_btn(scrollable_frame, 'Прямоугольник', lambda: self.figure_input(win, 'Прямоугольник', ['Длина', 'Ширина'], lambda v: (float(v[0]) * float(v[1]), 2 * (float(v[0]) + float(v[1])), None)), width=22, kind='special').pack(pady=4)
+        self.make_btn(scrollable_frame, 'Круг', lambda: self.figure_input(win, 'Круг', ['Радиус'], lambda v: (math.pi * float(v[0]) ** 2, 2 * math.pi * float(v[0]), None)), width=22, kind='special').pack(pady=4)
+        self.make_btn(scrollable_frame, 'Треугольник', lambda: self.figure_triangle(win), width=22, kind='special').pack(pady=4)
+        
+        ttk.Label(scrollable_frame, text='═══ Объёмные фигуры ═══', font=('Segoe UI', 10, 'bold')).pack(pady=(12, 4))
+        self.make_btn(scrollable_frame, 'Куб', lambda: self.figure_input(win, 'Куб', ['Длина ребра'], lambda v: (6 * float(v[0]) ** 2, None, float(v[0]) ** 3)), width=22, kind='op').pack(pady=4)
+        self.make_btn(scrollable_frame, 'Параллелепипед', lambda: self.figure_input(win, 'Параллелепипед', ['Длина', 'Ширина', 'Высота'], lambda v: (2 * (float(v[0]) * float(v[1]) + float(v[1]) * float(v[2]) + float(v[0]) * float(v[2])), None, float(v[0]) * float(v[1]) * float(v[2]))), width=22, kind='op').pack(pady=4)
+        self.make_btn(scrollable_frame, 'Шар (Сфера)', lambda: self.figure_input(win, 'Шар (Сфера)', ['Радиус'], lambda v: (4 * math.pi * float(v[0]) ** 2, None, (4/3) * math.pi * float(v[0]) ** 3)), width=22, kind='op').pack(pady=4)
+        self.make_btn(scrollable_frame, 'Цилиндр', lambda: self.figure_input(win, 'Цилиндр', ['Радиус', 'Высота'], lambda v: (2 * math.pi * float(v[0]) * (float(v[0]) + float(v[1])), None, math.pi * float(v[0]) ** 2 * float(v[1]))), width=22, kind='op').pack(pady=4)
+        self.make_btn(scrollable_frame, 'Конус', lambda: self.figure_input(win, 'Конус', ['Радиус', 'Высота'], lambda v: (math.pi * float(v[0]) * (float(v[0]) + math.sqrt(float(v[0]) ** 2 + float(v[1]) ** 2)), None, (1/3) * math.pi * float(v[0]) ** 2 * float(v[1]))), width=22, kind='op').pack(pady=4)
+        self.make_btn(scrollable_frame, 'Пирамида', lambda: self.figure_input(win, 'Пирамида', ['Площадь основания', 'Высота'], lambda v: (None, None, (1/3) * float(v[0]) * float(v[1]))), width=22, kind='op').pack(pady=4)
+        
+        # Поддержка прокрутки мышью
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), 'units')
+        canvas.bind_all('<MouseWheel>', _on_mousewheel)
 
     def figure_triangle(self, parent):
         win = tk.Toplevel(parent)
@@ -190,36 +220,43 @@ class CalculatorApp:
         if not THEME_AVAILABLE:
             win.configure(bg='#222831')
         ttk.Label(win, text='Площадь (основание и высота):').pack(pady=6)
-        self.make_btn(win, 'Площадь', lambda: self.figure_input(win, 'Площадь треугольника', ['Основание', 'Высота'], lambda v: (0.5 * float(v[0]) * float(v[1]), None)), width=18, kind='special').pack(pady=4)
-        self.make_btn(win, 'Периметр (три стороны)', lambda: self.figure_input(win, 'Периметр треугольника', ['Сторона1', 'Сторона2', 'Сторона3'], lambda v: (None, float(v[0]) + float(v[1]) + float(v[2]))), width=18, kind='special').pack(pady=4)
+        self.make_btn(win, 'Площадь', lambda: self.figure_input(win, 'Площадь треугольника', ['Основание', 'Высота'], lambda v: (0.5 * float(v[0]) * float(v[1]), None, None)), width=18, kind='special').pack(pady=4)
+        self.make_btn(win, 'Периметр (три стороны)', lambda: self.figure_input(win, 'Периметр треугольника', ['Сторона1', 'Сторона2', 'Сторона3'], lambda v: (None, float(v[0]) + float(v[1]) + float(v[2]), None)), width=18, kind='special').pack(pady=4)
 
     def figure_input(self, parent, title, fields, calc):
         win = tk.Toplevel(parent)
         win.title(title)
-        win.geometry('320x220')
+        win.geometry('340x280')
         if not THEME_AVAILABLE:
             win.configure(bg='#222831')
         entries = []
         for f in fields:
-            ttk.Label(win, text=f).pack(pady=3)
-            e = ttk.Entry(win)
+            ttk.Label(win, text=f + ':', font=('Segoe UI', 9)).pack(pady=3)
+            e = ttk.Entry(win, font=('Segoe UI', 10))
             e.pack(pady=2)
             entries.append(e)
 
         def compute():
             try:
                 vals = [e.get() for e in entries]
-                area, peri = calc(vals)
+                area, peri, volume = calc(vals)
                 parts = []
+                
                 if area is not None:
-                    parts.append(f'Площадь: {area}')
+                    parts.append(f'📐 Площадь поверхности: {area:.4f}')
                 if peri is not None:
-                    parts.append(f'Периметр: {peri}')
-                    self._show_msg('Результат', '\n'.join(parts))
-            except Exception:
-                    self._show_msg('Ошибка', 'Проверьте ввод', is_error=True)
+                    parts.append(f'📏 Периметр: {peri:.4f}')
+                if volume is not None:
+                    parts.append(f'📦 Объём: {volume:.4f}')
+                
+                if parts:
+                    self._show_msg('✓ Результат', '\n'.join(parts))
+                else:
+                    self._show_msg('Ошибка', 'Нет данных для вычисления', is_error=True)
+            except Exception as e:
+                self._show_msg('Ошибка', f'Проверьте ввод\n{str(e)}', is_error=True)
 
-        self.make_btn(win, 'Вычислить', compute, width=12, kind='special').pack(pady=8)
+        self.make_btn(win, '🔢 Вычислить', compute, width=14, kind='special').pack(pady=10)
 
 def main():
     if THEME_AVAILABLE:
